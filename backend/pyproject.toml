@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "yt-analyzer"
+version = "0.1.0"
+description = "Data extraction and analysis for YouTube videos for any incidents."
+authors = ["Sharuka Thirimanne"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+langchain = "0.3.7"
+langchain-community = "0.3.5"
+langchain-huggingface = "0.1.2"
+langchain-ollama = "0.2.0"
+onnxruntime = "1.19.2"
+huggingface-hub = "0.26.2"
+ollama = "0.4.2"
+datasets = "3.1.0"
+cohere = "5.11.3"
+accelerate = "1.1.1"
+numpy = "1.26.4"
+openai = "1.54.3"
+pandas = "^2.2.3"
+python-dotenv = "^1.0.1"
+langchain-qdrant = "^0.2.0"
+tqdm = "^4.67.1"
+langchain-cohere = "0.3.1"
+langchain-groq = "^0.2.1"
+faiss-cpu = "^1.9.0.post1"
+pytest = "^8.3.4"
+fastapi = {extras = ["standard"], version = "^0.115.6"}
+bertopic = "^0.16.4"
+dspy = "2.5.29"
+youtube-transcript-api = "0.6.2"
+google-api-python-client = "^2.156.0"
+google-auth = "^2.37.0"
+punctuators = "^0.0.7"
+deepmultilingualpunctuation = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

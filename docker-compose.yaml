@@ -1,0 +1,18 @@
+services:
+  db-postgres:
+    image: postgres:16.6
+    container_name: yt-postgres-db
+    restart: always
+    ports:
+      - 5432:5432
+    env_file:
+      - ./.env
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - db-postgres
+    ports:
+      - 8080:8080
+    
