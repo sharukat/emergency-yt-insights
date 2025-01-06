@@ -35,6 +35,11 @@ google-api-python-client = "^2.156.0"
 google-auth = "^2.37.0"
 punctuators = "^0.0.7"
 deepmultilingualpunctuation = "^1.0.1"
+ipykernel = "^6.29.5"
+ipywidgets = "^8.1.5"
+bitsandbytes = "^0.45.0"
+tbb = "2021.13.1"
+pymongo = "^4.10.1"
 
 
 [build-system]

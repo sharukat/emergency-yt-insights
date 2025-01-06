@@ -1,18 +1,54 @@
 services:
-  db-postgres:
-    image: postgres:16.6
-    container_name: yt-postgres-db
-    restart: always
+  mongo:
+    image: mongo
+    container_name: mongodb-yt-analyzer
+    volumes:
+      - ./database/mongodb:/data/db
     ports:
-      - 5432:5432
+      - "27017:27017"
+    restart: always
     env_file:
-      - ./.env
+      - .env
+    networks:
+      - adersim-net
 
-  adminer:
-    image: adminer
+  mongo-express:
+    image: mongo-express
+    container_name: mongoexpress-yt-analyzer
     restart: always
-    depends_on:
-      - db-postgres
     ports:
-      - 8080:8080
-    
+      - "8081:8081"
+    env_file:
+      - .env
+    networks:
+      - adersim-net
+
+  qdrantdb:
+    container_name: qdrant-yt-analyzer
+    image: qdrant/qdrant
+    restart: always
+    volumes:
+      - ./database/qdrant:/qdrant/storage
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    networks:
+      - adersim-net
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-yt-analyzer
+    volumes:
+      - ./backend/src:/app/src
+    ports:
+      - "80:80"
+    networks:
+      - adersim-net
+    depends_on:
+      - mongo
+      - qdrantdb
+
+networks:
+  adersim-net:

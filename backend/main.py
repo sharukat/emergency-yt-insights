@@ -1,14 +1,24 @@
-from typing import Union
+from pydantic import BaseModel
+from typing import List
 from fastapi import FastAPI
+from src.youtube import YouTube
+import logging
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+class FetchRequest(BaseModel):
+    context: str
+    keywords: List[str]
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+@app.post("/fetch")
+def fetch_data(request: FetchRequest):
+    YT = YouTube(context=request.context, keywords=request.keywords)
+    results = YT.fetch_data()
+    YT.mongodb_add(
+        db_name='extract',
+        collection_name='planecrash',
+        documents=results)
+    return {"results": results}

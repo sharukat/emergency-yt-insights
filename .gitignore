@@ -2,3 +2,6 @@ frontend/node_modules
 
 .env
 backend/.env
+
+database/qdrant
+database/mongodb
