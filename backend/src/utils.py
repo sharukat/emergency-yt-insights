@@ -1,30 +1,32 @@
 
 import os
+# import re
 import dspy
 import logging
 import pandas as pd
 from typing import List
 from transformers import AutoTokenizer
 from tqdm.notebook import tqdm_notebook
-from src.global_settings import SMALL_LLM, OPENAI_API_BASE
+from src.global_settings import SMALL_LLM, OLLAMA_API_BASE
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="./.env")
 
 
 class Punctuation(dspy.Signature):
-    """Fix the punctuations and capitalizations of the text without changing
-    the text."""
+    """Fix the punctuations and capitalizations
+    of the text without changing the text."""
 
     text: str = dspy.InputField()
     output: str = dspy.OutputField()
 
 
-def fix_punctuations(text: str) -> str:
+def preprocess(text: str) -> str:
+    # text = re.sub(r"[^a-zA-Z0–9]", "", text)
     lm = dspy.LM(
-        model=f"openai/{SMALL_LLM}",
-        api_key=os.environ.get("GROQ_API_KEY"),
-        api_base=OPENAI_API_BASE,
+        model=f"ollama_chat/{SMALL_LLM}",
+        api_key='',
+        api_base=OLLAMA_API_BASE,
         temperature=0,
     )
     dspy.configure(lm=lm)

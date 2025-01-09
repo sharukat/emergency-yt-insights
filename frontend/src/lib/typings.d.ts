@@ -17,3 +17,9 @@ export interface Videos{
   url: string;
   video_id: string;
 }
+
+export interface Collection{
+  _type:"collections"
+  key: string;
+  label: string;
+}

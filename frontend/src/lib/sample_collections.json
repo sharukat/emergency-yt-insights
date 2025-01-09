@@ -1,0 +1,18 @@
+{
+  "all_collections": [
+    { 
+        "key": "plane-crash", 
+        "label": "Plane Crash Analysis" },
+    { 
+        "key": "drink-driving", 
+        "label": "Drink Driving Prevention" },
+    {
+        "key": "disaster-emergency-management",
+        "label": "Disaster & Emergency Management"
+    },
+    {
+        "key": "health-safety-environment",
+        "label": "Health, Safety & Environment"
+    }
+  ]
+}

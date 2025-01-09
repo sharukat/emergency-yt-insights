@@ -3,13 +3,10 @@ from youtube_transcript_api import YouTubeTranscriptApi
 
 # import pandas as pd
 import time
-import json
-from bson import json_util
 from tqdm import tqdm
 from typing import List
 import os
 from dotenv import load_dotenv
-from pymongo import MongoClient
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -24,42 +21,6 @@ class YouTube:
         self.youtube = build("youtube", "v3", developerKey=API_KEY)
         self.context = context
         self.keywords = keywords
-
-        # Create a database client and a database
-        self.db_client = MongoClient("mongodb://adersim:connect@mongo:27017/")
-        self.db_extracted = self.db_client.extract
-        self.db_processed = self.db_client.processed
-        self.db_analyzed = self.db_client.analyzed
-
-        self.mongo_dbs = {
-            "extract": self.db_extracted,
-            "processed": self.db_processed,
-            "analyzed": self.db_analyzed,
-        }
-
-    def mongodb_add(
-        self, db_name: str, collection_name: str, documents: List[dict]
-    ) -> None:
-        try:
-            collection_list = self.mongo_dbs[db_name].list_collection_names()
-            if collection_name not in collection_list:
-                self.mongo_dbs[db_name].create_collection(name=collection_name)
-
-            collection = self.mongo_dbs[db_name][collection_name]
-
-            new_docs = [
-                json.loads(json_util.dumps(doc))
-                for doc in documents
-            ]
-
-            if new_docs:
-                collection.insert_many(new_docs)
-                logging.info(
-                    f"Added {len(new_docs)} records into {collection_name}")
-
-        except Exception as e:
-            logging.error(f"Error inserting documents: {str(e)}")
-            raise
 
     def build_queries(self):
         logging.info(self.keywords)
@@ -78,7 +39,7 @@ class YouTube:
                 q=q,
                 type="video",
                 order="relevance",
-                maxResults=50,
+                maxResults=5,
             )
             response = request.execute()
             for item in response["items"]:
@@ -89,7 +50,7 @@ class YouTube:
             time.sleep(1)
         return video_info
 
-    def fetch_data(self) -> List[dict]:
+    def fetch_data(self, required_comments: bool = False) -> List[dict]:
         videos = self.search_youtube()
         video_list = []
         logs = {}

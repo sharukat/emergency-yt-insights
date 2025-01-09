@@ -1,4 +1,4 @@
-import { Bot, ChartColumnDecreasing, HardDriveDownload, Settings } from "lucide-react"
+import { Bot, ChartColumnDecreasing, HardDriveDownload, Video } from "lucide-react"
 
 import {
   Sidebar,
@@ -16,24 +16,24 @@ import {
 const items = [
   {
     title: "Extract Data",
-    url: "#",
+    href: "/",
     icon: HardDriveDownload,
   },
   {
     title: "Visualizations",
-    url: "#",
+    href: "#",
     icon: ChartColumnDecreasing,
   },
   {
     title: "AI Assistant",
-    url: "#",
+    href: "/chat",
     icon: Bot,
   },
-  // {
-  //   title: "Settings",
-  //   url: "#",
-  //   icon: Settings,
-  // },
+  {
+    title: "Videos",
+    url: "#",
+    icon: Video,
+  },
 ]
 
 export function AppSidebar() {
@@ -50,7 +50,7 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <a href={item.href}>
                       <item.icon />
                       <span>{item.title}</span>
                     </a>

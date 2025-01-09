@@ -49,6 +49,28 @@ services:
     depends_on:
       - mongo
       - qdrantdb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - /usr/share/ollama/.ollama/models:/root/.ollama
+    ports:
+      - "11434:11434"
+    pull_policy: always
+    tty: true
+    restart: always
+    networks:
+      - adersim-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 networks:
   adersim-net:
