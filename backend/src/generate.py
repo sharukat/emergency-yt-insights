@@ -5,6 +5,7 @@ import logging
 from typing import List
 from dotenv import load_dotenv
 
+from src.global_settings import EMBED_MODEL
 from langchain_cohere import CohereRerank
 from langchain_groq import ChatGroq
 from langchain_core.documents import Document
@@ -36,7 +37,7 @@ class Chat:
             temperature=0,
         )
         self.dense_embeddings = OllamaEmbeddings(
-            model=self.model_name, base_url=os.getenv("OLLAMA_SERVICE")
+            model=EMBED_MODEL, base_url=os.getenv("OLLAMA_SERVICE")
         )
         self.sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
         self.types = {

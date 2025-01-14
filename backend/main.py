@@ -1,14 +1,15 @@
-import json
 import uuid
 import asyncio
 import logging
 from enum import Enum
-from typing import List
+from asyncio import Queue
 from src.crud import MongoCrud
 from src.youtube import YouTube
-from src.utils import preprocess
-# from src.classifiers import Classify
-from pydantic import BaseModel, Field
+from src.utils import preprocess, chunking
+from src.global_settings import StatusType
+from src.api_utils import FetchRequest, status_stream
+from src.classifiers import Classify
+from typing import Generic
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -29,113 +30,115 @@ app.add_middleware(
 DB = MongoCrud()
 
 
-class TaskStatus(str, Enum):
-    PENDING = "PENDING"
-    EXTRACTING = "EXTRACTING"
-    PREPROCESSING = "PREPROCESSING"
-    CLASSIFYING = "CLASSIFYING"
-    COMPLETED = "COMPLETED"
-    ERROR = "ERROR"
-    DATABASE = "SAVING TO THE DATABASE"
-
-
-class TaskResult:
-    def __init__(self):
-        self.status = TaskStatus.EXTRACTING
+class TaskResult(Generic[StatusType]):
+    def __init__(self,
+                 status_struct: type[StatusType],
+                 init_status: StatusType):
+        self.status_struct = status_struct
+        self.status = init_status
         self.result = None
         self.error = None
+        self.status_queue = Queue()
+
+    async def update_status(self, new_status: type[StatusType]):
+        self.status = new_status
+        await self.status_queue.put(new_status)
+        await asyncio.sleep(1)
+
+
+class ExtractionTaskStatus(str, Enum):
+    EXTRACTING = "Extracting..."
+    PREPROCESSING = "Preprocessing..."
+    CLASSIFYING = "Classifying..."
+    SAVING = "Saving..."
+    CHUNKING = "Chunking..."
+    COMPLETED = "Completed"
+    ERROR = "Error"
 
 
 active_tasks = {}
-status_updates = {}
-
-
-class FetchRequest(BaseModel):
-    # ... emphasize that the field is required (must be provided)
-    context: str = Field(..., description="Context for data fetching")
-    keywords: List[str] = Field(..., description="List of keywords to search")
-    collection_name: str = Field(..., description="MongoDB collection name")
-    is_existing_collection: bool = Field(False)
 
 
 async def process_data(task_id: str, request: FetchRequest):
     task_result = active_tasks[task_id]
     try:
-        task_result.status = TaskStatus.EXTRACTING
+        await task_result.update_status(ExtractionTaskStatus.EXTRACTING)
         YT = YouTube(context=request.context, keywords=request.keywords)
-        results = YT.fetch_data()
-        STATUS = "ADDING DATA TO A NEW COLLECTION"
+        results = YT.fetch_data(required_comments=request.comments_required)
+
+        COLL_STATUS = "ADDING DATA TO A NEW COLLECTION"
         if request.is_existing_collection:
-            STATUS = "ADDING DATA TO AN EXISTING COLLECTION"
+            COLL_STATUS = "ADDING DATA TO AN EXISTING COLLECTION"
             existing_ids = DB.get_ids("extract", request.collection_name)
             new_results = [
                 item
                 for item in results
-                if item['video_id'] not in existing_ids
+                if item["video_id"] not in existing_ids
             ]
             logging.info(f"{len(new_results)} out of {len(results)} are new.")
             results = new_results
-        logging.info(STATUS)
+        logging.info(COLL_STATUS)
+        logging.info(task_result.status)
 
-        task_result.status = TaskStatus.DATABASE
+        await task_result.update_status(ExtractionTaskStatus.SAVING)
         DB.insert_many("extract", request.collection_name, results)
+        logging.info(task_result.status)
 
-        task_result.status = TaskStatus.PREPROCESSING
+        await task_result.update_status(ExtractionTaskStatus.PREPROCESSING)
         processed_results = [
             {**item, "transcript": preprocess(item["transcript"])}
             for item in results
         ]
+        logging.info(task_result.status)
 
-        # task_result.status = TaskStatus.CLASSIFYING
-        # classifier = Classify()
-        # relevant = [
-        #     {**item, "related": "Yes"}
-        #     for item in processed_results
-        #     if classifier.classifier(
-        #         text=item["transcript"],
-        #         type="video_relevance",
-        #         topic=request.context
-        #     ).prediction == "Related"
-        # ]
-        DB.insert_many("processed", request.collection_name, processed_results)
+        # Identify whether the vidoes are relevant - Binary classification
+        await task_result.update_status(ExtractionTaskStatus.CLASSIFYING)
+        classifier = Classify()
+        relevant = [
+            {**item, "related": "Yes"}
+            for item in processed_results
+            if classifier.classifier(
+                text=item["transcript"],
+                type="video_relevance",
+                topic=request.context
+            )["prediction"] == "Related"
+        ]
 
-        task_result.status = TaskStatus.COMPLETED
+        # Save preprocessed and classified data in the database
+        await task_result.update_status(ExtractionTaskStatus.SAVING)
+        DB.insert_many("processed", request.collection_name, relevant)
+
+        # Chunk extracted video transcripts and identify chunks relevancy
+        await task_result.update_status(ExtractionTaskStatus.CHUNKING)
+        chunked = []
+        for item in relevant:
+            chunks = chunking(item, "transcript", request.context)
+            chunked.extend(chunks)
+
+        # Save chunks data in the 'chunked' database
+        await task_result.update_status(ExtractionTaskStatus.SAVING)
+        DB.insert_many("chunked", request.collection_name, chunked)
+
+        await task_result.update_status(ExtractionTaskStatus.COMPLETED)
+        logging.info(task_result.status)
         task_result.result = "Final results"
 
     except Exception as e:
         logging.error(f"Error processing task {task_id}: {str(e)}")
-        task_result.status = TaskStatus.ERROR
+        await task_result.update_status(ExtractionTaskStatus.ERROR)
         task_result.error = str(e)
 
 
-async def status_stream(task_id: str):
-    """Stream status updates for a specific task"""
-    task_result = active_tasks[task_id]
-    previous_status = None
-
-    while True:
-        current_status = task_result.status
-        if current_status != previous_status:
-            data = {"status": current_status, "task_id": task_id}
-            if current_status == TaskStatus.COMPLETED:
-                data["result"] = task_result.result
-            elif current_status == TaskStatus.ERROR:
-                data["error"] = task_result.error
-
-            yield f"data: {json.dumps(data)}\n\n"
-            previous_status = current_status
-
-            # Exit the loop if we've reached a terminal state
-            if current_status in [TaskStatus.COMPLETED, TaskStatus.ERROR]:
-                break
-
-        await asyncio.sleep(0.5)
+# *****************************************************************
+# FastAPI Endpoints
+# *****************************************************************
 
 
 @app.post("/fetch")
 async def fetch_data(request: FetchRequest, background_tasks: BackgroundTasks):
     task_id = str(uuid.uuid4())
-    active_tasks[task_id] = TaskResult()
+    active_tasks[task_id] = TaskResult(
+        ExtractionTaskStatus, ExtractionTaskStatus.EXTRACTING)
 
     # Start processing in the background
     background_tasks.add_task(process_data, task_id, request)
@@ -145,10 +148,13 @@ async def fetch_data(request: FetchRequest, background_tasks: BackgroundTasks):
 @app.get("/status/{task_id}")
 async def stream_status(task_id: str):
     if task_id not in active_tasks:
-        return JSONResponse(
-            status_code=404, content={"error": "Task not found"})
+        return JSONResponse(status_code=404,
+                            content={"error": "Task not found"})
     return StreamingResponse(
-        status_stream(task_id), media_type="text/event-stream")
+        status_stream(task_id, active_tasks, ExtractionTaskStatus),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
 
 
 @app.get("/collections")

@@ -8,41 +8,24 @@ import {
   Switch,
   Select,
   SelectItem,
-  Progress,
+  Spinner,
 } from "@nextui-org/react";
 import { useCollections } from "@/hooks/use_collections";
 import { useExtractor } from "@/hooks/use-extactor";
 import toast from "react-hot-toast";
-
-type Status =
-  | "PENDING"
-  | "EXTRACTING"
-  | "PREPROCESSING"
-  | "CLASSIFYING"
-  | "COMPLETED"
-  | "ERROR";
-
-const statusToProgress: Record<Status, number> = {
-  PENDING: 0,
-  EXTRACTING: 25,
-  PREPROCESSING: 50,
-  CLASSIFYING: 75,
-  COMPLETED: 100,
-  ERROR: 0,
-};
+import { Status } from "@/lib/typings";
 
 export default function ExtractForm() {
   const [action, setAction] = useState<string | null>(null);
   const [isSelected, setIsSelected] = useState(false);
+  const [isCommentsSelected, setIsCommentsSelected] = useState(false);
   const { collections, getCollections } = useCollections();
   const {
     taskId,
     status,
-    progress,
     result,
     setTaskId,
     setStatus,
-    setProgress,
     setResult,
     fetchFormData,
   } = useExtractor();
@@ -61,24 +44,37 @@ export default function ExtractForm() {
     );
 
     eventSource.onmessage = (event) => {
+      console.log("Raw SSE event data:", event.data);
       try {
         const data = JSON.parse(event.data);
-        console.log("SSE update:", data); // Debug log
+        console.log("SSE update:", data);
 
-        const currentStatus = data.status as Status;
-        setStatus(currentStatus);
-        setProgress(statusToProgress[currentStatus]);
+        if (data.status) {
+          setStatus(data.status as Status);
 
-        if (currentStatus === "COMPLETED") {
-          setResult(data.result);
-          toast.success("Operation Completed Successfully");
-          eventSource.close();
-          setAction(null);
-        } else if (currentStatus === "ERROR") {
-          console.error(`Error: ${data.error}`);
-          toast.error(data.error || "An error occurred during processing");
-          eventSource.close();
-          setAction(null);
+          switch (data.status) {
+            case "EXTRACTING":
+              console.log("Starting data extraction");
+              break;
+            case "PREPROCESSING":
+              console.log("Data extracted, preprocessing started");
+              break;
+            case "SAVING": // Changed from "DATABASE" to "SAVING"
+              console.log("Saving data to database");
+              break;
+            case "COMPLETED":
+              setResult(data.result);
+              console.log("Operation completed successfully");
+              eventSource.close();
+              setAction(null);
+              break;
+            case "ERROR":
+              console.error(`Error: ${data.error}`);
+              toast.error(data.error || "An error occurred during processing");
+              eventSource.close();
+              setAction(null);
+              break;
+          }
         }
       } catch (error) {
         console.error("Error parsing SSE data:", error);
@@ -103,8 +99,7 @@ export default function ExtractForm() {
   const handleOnSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAction("fetch");
-    setProgress(0); // Reset progress when starting new fetch
-    setStatus("PENDING");
+    setStatus("Extracting...");
 
     let data = Object.fromEntries(new FormData(e.currentTarget));
     let keywords: string[] = (data.keywords as string)
@@ -115,14 +110,14 @@ export default function ExtractForm() {
       String(data.context),
       keywords,
       String(data.collection),
-      isSelected
+      isSelected,
+      isCommentsSelected
     );
   };
 
   const handleReset = () => {
     setAction(null);
-    setProgress(0);
-    setStatus("PENDING");
+    setStatus("Extracting...");
     setTaskId(null);
     setResult(null);
   };
@@ -155,16 +150,30 @@ export default function ExtractForm() {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Switch isSelected={isSelected} onValueChange={setIsSelected}>
-          Existing collection
-        </Switch>
-        <p className="text-small text-default-500">
-          Selected:{" "}
-          {isSelected
-            ? "Using an existing collection"
-            : "Creating a new collection"}
-        </p>
+      <div className="flex w-full flex-wrap md:flex-nowrap gap-8">
+        <div className="flex flex-col gap-2">
+          <Switch isSelected={isSelected} onValueChange={setIsSelected}>
+            Existing collection
+          </Switch>
+          <p className="text-small text-default-500">
+            Selected:{" "}
+            {isSelected
+              ? "Using an existing collection"
+              : "Creating a new collection"}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Switch isSelected={isCommentsSelected} onValueChange={setIsCommentsSelected}>
+            Extract comments
+          </Switch>
+          <p className="text-small text-default-500">
+            Selected:{" "}
+            {isCommentsSelected
+              ? "Extracting transcripts and comments"
+              : "Extracting transcripts only"}
+          </p>
+        </div>
       </div>
 
       {isSelected && (
@@ -196,18 +205,8 @@ export default function ExtractForm() {
         />
       )}
 
-      {action === "fetch" && (
-        <div className="flex flex-col gap-2">
-          <Progress
-            aria-label="Processing..."
-            className="max-w-md"
-            color="success"
-            showValueLabel={true}
-            value={progress}
-            size="md"
-          />
-          <p className="text-small text-default-500">Status: {status}</p>
-        </div>
+      {action === "fetch" && status !== "Completed" && (
+        <Spinner color="default" label={status} labelColor="foreground" />
       )}
 
       <div className="flex gap-2">

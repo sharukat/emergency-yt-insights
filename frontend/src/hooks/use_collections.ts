@@ -5,6 +5,7 @@ export const useCollections = () => {
   const [collections, setCollections] = useState(() => {
     return [];
   });
+  const [collection, setCollection] = useState<string | number>("");
 
   const getCollections = async (db_name: string) => {
     try {
@@ -28,5 +29,16 @@ export const useCollections = () => {
       toast.error("Failed to get response from server");
     }
   };
-  return { collections, setCollections, getCollections };
+
+  const handleCollections = useCallback((db_name: string) => {
+    if (!collections || collections.length === 0) {
+      getCollections(db_name);
+    }
+  }, [collections]);
+
+  const handleCollectionSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCollection(e.target.value);
+  };
+
+  return { collections, getCollections, collection, handleCollections, handleCollectionSelect };
 };

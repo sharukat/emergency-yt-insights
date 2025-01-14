@@ -1,9 +1,8 @@
-import os
 import dspy
 import logging
 from typing import Literal
 from typing import Dict, Optional
-from src.global_settings import BASE_LLM, OPENAI_API_BASE
+from src.global_settings import BASE_LLM, OLLAMA_API_BASE
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="./.env")
@@ -37,9 +36,9 @@ class Classify:
     def __init__(self) -> None:
         """Initialize the classifier with language model configuration."""
         self.lm = dspy.LM(
-            model=f"openai/{BASE_LLM}",
-            api_key=os.environ.get("GROQ_API_KEY"),
-            api_base=OPENAI_API_BASE,
+            model=f"ollama_chat/{BASE_LLM}",
+            api_key="",
+            api_base=OLLAMA_API_BASE,
             temperature=0,
         )
         dspy.configure(lm=self.lm)
@@ -84,7 +83,6 @@ class Classify:
             raise ValueError(message)
 
         classify = dspy.ChainOfThought(self.mode[type])
-
         try:
             if type == "video_relevance":
                 result = classify(topic=topic, text=text)

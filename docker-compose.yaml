@@ -42,6 +42,7 @@ services:
     container_name: backend-yt-analyzer
     volumes:
       - ./backend/src:/app/src
+      - ./backend/topic_models:/app/topic_models
     ports:
       - "80:80"
     networks:

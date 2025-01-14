@@ -20,10 +20,12 @@ class MongoCrud:
         self.db_extracted = self.client.extract
         self.db_processed = self.client.processed
         self.db_analyzed = self.client.analyzed
+        self.db_chunked = self.client.chunked
 
         self.dbs = {
             "extract": self.db_extracted,
             "processed": self.db_processed,
+            "chunked": self.db_chunked,
             "analyzed": self.db_analyzed,
         }
 

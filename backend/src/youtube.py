@@ -39,7 +39,7 @@ class YouTube:
                 q=q,
                 type="video",
                 order="relevance",
-                maxResults=5,
+                maxResults=20,
             )
             response = request.execute()
             for item in response["items"]:
@@ -67,23 +67,24 @@ class YouTube:
                 for i in transcript:
                     text_formatted += " " + i["text"]
 
-                # try:
-                #     # Fetch comments
-                #     comments = []
-                #     response = self.youtube.commentThreads().list(
-                #         part='snippet',
-                #         videoId=id,
-                #         textFormat='plainText',
-                #         maxResults=1000,
-                #     ).execute()
-                #     if response['items']:
-                #         for _, item_comment in enumerate(response['items']):
-                #             top = item_comment['snippet']['topLevelComment']
-                #             comment = top['snippet']['textDisplay']
-                #             comments.append(comment)
-                # except Exception as e:
-                #     logging.error(e)
-                #     comments.append("Comments disabled")
+                if required_comments:
+                    try:
+                        # Fetch comments
+                        comments = []
+                        response = self.youtube.commentThreads().list(
+                            part='snippet',
+                            videoId=id,
+                            textFormat='plainText',
+                            maxResults=500,
+                        ).execute()
+                        if response['items']:
+                            for index, item in enumerate(response['items']):
+                                top = item['snippet']['topLevelComment']
+                                comment = top['snippet']['textDisplay']
+                                comments.append(f"{index}: {comment}")
+                    except Exception as e:
+                        logging.error(e)
+                        comments.append("Comments disabled")
 
                 # Fixed: Access dictionary values correctly
                 db_item = {
@@ -91,7 +92,7 @@ class YouTube:
                     "title": str(title),
                     "url": str(video_url),
                     "transcript": text_formatted,
-                    # 'comments': comments
+                    "comments": comments
                 }
                 if not isinstance(db_item, dict):
                     logging.error(f"Invalid item: {db_item}")

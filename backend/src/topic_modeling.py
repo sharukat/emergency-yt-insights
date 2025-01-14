@@ -13,7 +13,7 @@ from bertopic import BERTopic
 from bertopic.representation import TextGeneration
 from sklearn.feature_extraction.text import CountVectorizer
 from sentence_transformers import SentenceTransformer
-from src.global_settings import EMBED_MODEL
+from src.global_settings import HF_EMBED_MODEL
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="./.env")
@@ -26,13 +26,16 @@ class BertTopic:
         self.pool = None
         self.generator = None
         self.zero_shot_topics = [
-            "AI applications for Disaster and Emergency Management",
-            "AI technologies for Disaster and Emergency Management",
+            "Landing Gear Failure",
+            "Collision with Concrete Barrier",
+            "Black Box Data Loss",
+            "Bird Strike"
         ]
 
     def start_pool(self):
         if self.embedding_model is None:
-            self.embedding_model = SentenceTransformer(EMBED_MODEL)
+            self.embedding_model = SentenceTransformer(
+                HF_EMBED_MODEL, trust_remote_code=True)
             self.pool = self.embedding_model.start_multi_process_pool()
 
     def cleanup(self):
@@ -62,10 +65,11 @@ class BertTopic:
             The topic is described by the following keywords: 'meat, beef,
             eating, emissions, food'.
 
-            Based on the information about the topic above, please create a
-            short label of this topic. Make sure you to only return the label
-            and nothing more.
-            [/INST] Environmental impacts of eating meat
+            Based on the information about the topic above, please identify
+            causes for the issue and create a short english label of this
+            topic emphasizing the cause. Make sure you to only return the
+            label and nothing more.
+            [/INST] High consumption of meat impacts the environment.
         """
 
         main_prompt = """
@@ -75,9 +79,10 @@ class BertTopic:
 
             The topic is described by the following keywords: '[KEYWORDS]'.
 
-            Based on the information about the topic above, please create
-            a short english label of this topic. Make sure you to only return
-            the label and nothing more.
+            Based on the information about the topic above, please identify
+            causes for the issue and create a short english label of this
+            topic emphasizing the cause. Make sure you to only return the
+            label and nothing more.
             [/INST]
         """
         prompt = system_prompt + oneshot_prompt + main_prompt
@@ -112,11 +117,11 @@ class BertTopic:
 
         # Few-shot topic modeling
         topic_model = BERTopic(
-            min_topic_size=10,
+            min_topic_size=2,
             embedding_model=self.embedding_model,
             vectorizer_model=vectorizer,
             zeroshot_topic_list=self.zero_shot_topics,
-            zeroshot_min_similarity=0.9,
+            zeroshot_min_similarity=0.8,
             representation_model=self.get_representation_models(),
             verbose=True,
         )
@@ -132,7 +137,7 @@ class BertTopic:
         topic_model.save(
             f"topic_models/{model_name}",
             serialization="safetensors",
-            save_embedding_model=False,
+            save_embedding_model=False
         )
         print("Model saved successfully.")
 

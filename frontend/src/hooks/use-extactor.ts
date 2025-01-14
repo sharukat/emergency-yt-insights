@@ -1,25 +1,18 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-
-type Status =
-  | "PENDING"
-  | "EXTRACTING"
-  | "PREPROCESSING"
-  | "CLASSIFYING"
-  | "COMPLETED"
-  | "ERROR";
+import { Status } from "@/lib/typings";
 
 export const useExtractor = () => {
   const [taskId, setTaskId] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>("PENDING");
-  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<Status>("Extracting...");
   const [result, setResult] = useState<any>(null);
 
   const fetchFormData = async (
     context: string,
     keywords: string[],
     collection_name: string,
-    is_existing_collection: boolean
+    is_existing_collection: boolean,
+    comments_required: boolean
   ) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_URL}/fetch`, {
@@ -30,7 +23,8 @@ export const useExtractor = () => {
           context: context,
           keywords: keywords,
           collection_name: collection_name,
-          is_existing_collection: is_existing_collection
+          is_existing_collection: is_existing_collection,
+          comments_required: comments_required
         }),
       });
       const data = await response.json();
@@ -53,11 +47,9 @@ export const useExtractor = () => {
   return {
     taskId,
     status,
-    progress,
     result,
     setTaskId,
     setStatus,
-    setProgress,
     setResult,
     fetchFormData,
   };

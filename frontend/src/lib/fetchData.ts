@@ -11,13 +11,13 @@ import { Collection } from "@/lib/typings"
 // };
 
 export const fetchCollections = async () => {
-  const res = await fetch("http://130.63.65.112:80/getcollections", {
+  const res = await fetch("http://130.63.65.112:80/collections", {
     method: "POST",
     mode: "cors",
     headers: { "Content-Type": "application/json" }
   });
   const data = await res.json()
-  const collections: Collection[] = data.all_collections
+  const collections: Collection[] = data.response
   return collections
 }
 

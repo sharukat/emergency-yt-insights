@@ -21,7 +21,7 @@ const items = [
   },
   {
     title: "Visualizations",
-    href: "#",
+    href: "/visualize",
     icon: ChartColumnDecreasing,
   },
   {
@@ -31,7 +31,7 @@ const items = [
   },
   {
     title: "Videos",
-    url: "#",
+    href: "/videos",
     icon: Video,
   },
 ]
