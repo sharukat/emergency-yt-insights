@@ -40,7 +40,7 @@ export default function ExtractForm() {
     if (!taskId) return;
 
     const eventSource = new EventSource(
-      `${process.env.NEXT_PUBLIC_URL}/status/${taskId}`
+      `${process.env.NEXT_PUBLIC_URL}/status/extraction/${taskId}`
     );
 
     eventSource.onmessage = (event) => {
@@ -53,22 +53,13 @@ export default function ExtractForm() {
           setStatus(data.status as Status);
 
           switch (data.status) {
-            case "EXTRACTING":
-              console.log("Starting data extraction");
-              break;
-            case "PREPROCESSING":
-              console.log("Data extracted, preprocessing started");
-              break;
-            case "SAVING": // Changed from "DATABASE" to "SAVING"
-              console.log("Saving data to database");
-              break;
-            case "COMPLETED":
+            case "Completed":
               setResult(data.result);
               console.log("Operation completed successfully");
               eventSource.close();
               setAction(null);
               break;
-            case "ERROR":
+            case "Error":
               console.error(`Error: ${data.error}`);
               toast.error(data.error || "An error occurred during processing");
               eventSource.close();

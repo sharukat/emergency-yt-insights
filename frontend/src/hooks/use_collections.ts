@@ -5,7 +5,8 @@ export const useCollections = () => {
   const [collections, setCollections] = useState(() => {
     return [];
   });
-  const [collection, setCollection] = useState<string | number>("");
+  const [collection, setCollection] = useState<string>("");
+  const [database, setDatabase] = useState(() => { return "" })
 
   const getCollections = async (db_name: string) => {
     try {
@@ -18,9 +19,9 @@ export const useCollections = () => {
         }
       );
       const data = await response.json();
-      console.log(data.response);
       if (data.response) {
         setCollections(data.response);
+        setDatabase(db_name)
       } else {
         toast.error("Received invalid response format from server");
       }
@@ -31,10 +32,10 @@ export const useCollections = () => {
   };
 
   const handleCollections = useCallback((db_name: string) => {
-    if (!collections || collections.length === 0) {
+    if (!collections || collections.length === 0 || database !== db_name) {
       getCollections(db_name);
     }
-  }, [collections]);
+  }, [collections, database]);
 
   const handleCollectionSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCollection(e.target.value);

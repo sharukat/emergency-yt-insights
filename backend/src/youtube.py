@@ -39,7 +39,7 @@ class YouTube:
                 q=q,
                 type="video",
                 order="relevance",
-                maxResults=20,
+                maxResults=5,
             )
             response = request.execute()
             for item in response["items"]:

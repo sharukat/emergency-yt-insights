@@ -1,11 +1,11 @@
 import os
-import torch
+import logging
 from torch import bfloat16
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     pipeline,
-    BitsAndBytesConfig
+    BitsAndBytesConfig,
 )
 import pandas as pd
 from typing import List
@@ -16,33 +16,23 @@ from sentence_transformers import SentenceTransformer
 from src.global_settings import HF_EMBED_MODEL
 
 from dotenv import load_dotenv
+
 load_dotenv(dotenv_path="./.env")
 
 
 class BertTopic:
-    def __init__(self) -> None:
+    def __init__(self, zero_shot_topics: List[str]) -> None:
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
         self.embedding_model = None
         self.pool = None
         self.generator = None
-        self.zero_shot_topics = [
-            "Landing Gear Failure",
-            "Collision with Concrete Barrier",
-            "Black Box Data Loss",
-            "Bird Strike"
-        ]
-
-    def start_pool(self):
-        if self.embedding_model is None:
-            self.embedding_model = SentenceTransformer(
-                HF_EMBED_MODEL, trust_remote_code=True)
-            self.pool = self.embedding_model.start_multi_process_pool()
-
-    def cleanup(self):
-        if self.pool is not None:
-            self.embedding_model.stop_multi_process_pool(self.pool)
-            self.pool = None
-        torch.cuda.empty_cache()
+        self.zero_shot_topics = zero_shot_topics
+        # self.zero_shot_topics = [
+        #     "Landing Gear Failure",
+        #     "Collision with Concrete Barrier",
+        #     "Black Box Data Loss",
+        #     "Bird Strike"
+        # ]
 
     def get_representation_models(self) -> str:
         system_prompt = """
@@ -95,9 +85,9 @@ class BertTopic:
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
-            bnb_4bit_quant_type='nf4',
+            bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=bfloat16
+            bnb_4bit_compute_dtype=bfloat16,
         )
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
@@ -128,33 +118,33 @@ class BertTopic:
         return topic_model
 
     def create_dataframe(self, llama_labels, filename: str) -> None:
-        df = pd.DataFrame(llama_labels, columns=['topics'])
+        df = pd.DataFrame(llama_labels, columns=["topics"])
         df.to_csv(f"data/{filename}.csv", index=False)
 
-    def save_models(self,
-                    topic_model: BERTopic,
-                    model_name: str) -> None:
+    def save_models(self, topic_model: BERTopic, model_name: str) -> None:
         topic_model.save(
             f"topic_models/{model_name}",
             serialization="safetensors",
-            save_embedding_model=False
+            save_embedding_model=False,
         )
         print("Model saved successfully.")
 
-    def get_topics(self, paragraphs: List[str], filename: str):
-        self.start_pool()
-        embed = self.embedding_model.encode_multi_process(
-            paragraphs, pool=self.pool,
-            show_progress_bar=True
-        )
-        self.cleanup()
+    def get_topics(self, paragraphs: List[str]):
+        if self.embedding_model is None:
+            self.embedding_model = SentenceTransformer(
+                HF_EMBED_MODEL, trust_remote_code=True
+            )
+        logging.info("Embedding in progress..")
+        embed = self.embedding_model.encode(paragraphs, show_progress_bar=True)
 
+        logging.info("Topic modeling in progress...")
         topic_model = self.create_topic_model()
         topics, _ = topic_model.fit_transform(paragraphs, embed)
         topics = topic_model.get_topics(full=True)["llama"].values()
         llama_labels = [label[0][0].split("\n")[0] for label in topics]
-        self.create_dataframe(llama_labels, filename)
+        # self.create_dataframe(llama_labels, filename)
         self.save_models(topic_model, model_name="model-v1")
+        logging.info("Operation completed.")
         return llama_labels
 
     def predict_topics(self, model_name: str, dataset: pd.DataFrame, col: str):
@@ -162,8 +152,8 @@ class BertTopic:
         loaded_model = BERTopic.load(model_path)
 
         docs = [row[col] for _, row in dataset.iterrows()]
-        embed = self.embedding_model.encode_multi_process(
-            docs, pool=self.pool, show_progress_bar=True
+        embed = self.embedding_model.encode(
+            docs, show_progress_bar=True
         )
         topics, _ = loaded_model.transform(docs, embeddings=embed)
 

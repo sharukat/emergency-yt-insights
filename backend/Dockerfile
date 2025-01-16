@@ -1,8 +1,12 @@
-FROM python:3.11
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04
 
 WORKDIR /app
 
 COPY ./requirements.txt /app
+
+RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3-pip
 
 RUN pip install -r requirements.txt
 

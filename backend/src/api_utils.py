@@ -18,6 +18,11 @@ class FetchRequest(BaseModel):
     comments_required: bool = Field(False)
 
 
+class AnalyzeRequest(BaseModel):
+    collection_name: str = Field(..., description="MongoDB collection name")
+    topics: List[str] = Field([], description="List of topics")
+    analysis_types: List[str] = Field(..., description="Type of the analysis")
+
 # *****************************************************************
 # Helper Classes and Funtions for Streaming Backend Status
 # *****************************************************************

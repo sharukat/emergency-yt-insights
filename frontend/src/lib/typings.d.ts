@@ -31,4 +31,6 @@ export type Status =
   | "Saving..."
   | "Chunking..."
   | "Completed"
-  | "Error";
+  | "Error"
+  | "Topic modeling in progress..."
+  | "Sentiment analysis in progress...";

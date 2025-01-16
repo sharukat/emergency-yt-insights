@@ -12,7 +12,7 @@ import { Collection } from "@/lib/typings"
 
 export const fetchCollections = async () => {
   const res = await fetch("http://130.63.65.112:80/collections", {
-    method: "POST",
+    method: "GET",
     mode: "cors",
     headers: { "Content-Type": "application/json" }
   });

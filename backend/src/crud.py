@@ -21,12 +21,16 @@ class MongoCrud:
         self.db_processed = self.client.processed
         self.db_analyzed = self.client.analyzed
         self.db_chunked = self.client.chunked
+        self.db_topics = self.client.topics
+        self.db_sentiments = self.client.sentiments
 
         self.dbs = {
             "extract": self.db_extracted,
             "processed": self.db_processed,
             "chunked": self.db_chunked,
             "analyzed": self.db_analyzed,
+            "topics": self.db_topics,
+            "sentiments": self.db_sentiments,
         }
 
     def insert_many(
@@ -53,3 +57,11 @@ class MongoCrud:
     def get_ids(self, db_name: str, collection_name: str):
         ids = self.dbs[db_name][collection_name].distinct("video_id")
         return set(ids) if ids else set()
+
+    def get_text(self, db_name: str, collection_name: str, attribute: str):
+        items = self.dbs[db_name][collection_name].distinct(attribute)
+        return items if items else []
+
+    def get_all(self, db_name: str, collection_name: str):
+        data = self.dbs[db_name][collection_name]
+        return data
