@@ -11,6 +11,7 @@ from src.global_settings import StatusType
 from src.topic_modeling import BertTopic
 from src.api_utils import FetchRequest, AnalyzeRequest, status_stream
 from src.classifiers import Classify
+from src.vectordb import VectorDB
 from typing import Generic
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,6 +59,7 @@ class TaskStatus(str, Enum):
     ERROR = "Error"
     TOPICMODEL = "Topic modeling in progress..."
     SENTIMENTS = "Sentiment analysis in progress..."
+    VECTORDB = "Creating vector database..."
 
 
 # active_tasks = {}
@@ -126,6 +128,14 @@ async def process_data(task_id: str, request: FetchRequest):
         # Save chunks data in the 'chunked' database
         await task_result.update_status(TaskStatus.SAVING)
         DB.insert_many("chunked", request.collection_name, chunked)
+
+        # Creating the vector database using the chunks
+        await task_result.update_status(TaskStatus.VECTORDB)
+        VDB = VectorDB()
+        if request.is_existing_collection:
+            VDB.add_to_exisitng_collection(chunked, request.collection_name)
+        else:
+            VDB.create_vectordb(chunked, request.collection_name)
 
         await task_result.update_status(TaskStatus.COMPLETED)
         logging.info(task_result.status)

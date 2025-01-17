@@ -9,6 +9,7 @@ import {
   Select,
   SelectItem,
   Spinner,
+  Alert,
 } from "@nextui-org/react";
 import { useCollections } from "@/hooks/use_collections";
 import { useExtractor } from "@/hooks/use-extactor";
@@ -114,100 +115,117 @@ export default function ExtractForm() {
   };
 
   return (
-    <Form
-      className="w-full max-w-5xl flex flex-col gap-10 mt-10"
-      validationBehavior="native"
-      onReset={handleReset}
-      onSubmit={handleOnSubmit}
-    >
-      <div className="flex w-full flex-wrap md:flex-nowrap gap-8">
-        <Input
-          isRequired
-          errorMessage="Please enter the context of the search query"
-          label="Context"
-          labelPlacement="outside"
-          name="context"
-          placeholder="Enter the context (e.g.: Plane crash)"
-          type="text"
-        />
-        <Input
-          isRequired
-          errorMessage="Please enter the keywords"
-          label="Keywords"
-          labelPlacement="outside"
-          name="keywords"
-          placeholder="Enter the keywords (e.g.: korean flight, jeju)"
-          type="text"
+    <div className="flex flex-col gap-5 max-w-5xl">
+      <div className="my-5">
+        <Alert
+          className="p-10"
+          radius="lg"
+          color="success"
+          variant="faded"
+          description="This module includes several key processes: Search, Transcript & Comment Retrieval, Preprocessing, Transcript Classification, Semantic Chunking, Chunk Classification, and Vector Database Creation. Please note that due to the complexity of these steps, the process may take some time to complete."
         />
       </div>
-
-      <div className="flex w-full flex-wrap md:flex-nowrap gap-8">
-        <div className="flex flex-col gap-2">
-          <Switch isSelected={isSelected} onValueChange={setIsSelected}>
-            Existing collection
-          </Switch>
-          <p className="text-small text-default-500">
-            Selected:{" "}
-            {isSelected
-              ? "Using an existing collection"
-              : "Creating a new collection"}
-          </p>
+      <Form
+        className="w-full max-w-5xl flex flex-col gap-10 mt-10"
+        validationBehavior="native"
+        onReset={handleReset}
+        onSubmit={handleOnSubmit}
+      >
+        <div className="flex w-full flex-wrap md:flex-nowrap gap-8">
+          <Input
+            isRequired
+            errorMessage="Please enter the context of the search query"
+            label="Context"
+            labelPlacement="outside"
+            name="context"
+            placeholder="Enter the context (e.g.: Plane crash)"
+            type="text"
+          />
+          <Input
+            isRequired
+            errorMessage="Please enter the keywords"
+            label="Keywords"
+            labelPlacement="outside"
+            name="keywords"
+            placeholder="Enter the keywords (e.g.: korean flight, jeju)"
+            type="text"
+          />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Switch isSelected={isCommentsSelected} onValueChange={setIsCommentsSelected}>
-            Extract comments
-          </Switch>
-          <p className="text-small text-default-500">
-            Selected:{" "}
-            {isCommentsSelected
-              ? "Extracting transcripts and comments"
-              : "Extracting transcripts only"}
-          </p>
+        <div className="flex w-full flex-wrap md:flex-nowrap gap-8">
+          <div className="flex flex-col gap-2">
+            <Switch isSelected={isSelected} onValueChange={setIsSelected}>
+              Existing collection
+            </Switch>
+            <p className="text-small text-default-500">
+              Selected:{" "}
+              {isSelected
+                ? "Using an existing collection"
+                : "Creating a new collection"}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Switch
+              isSelected={isCommentsSelected}
+              onValueChange={setIsCommentsSelected}
+            >
+              Extract comments
+            </Switch>
+            <p className="text-small text-default-500">
+              Selected:{" "}
+              {isCommentsSelected
+                ? "Extracting transcripts and comments"
+                : "Extracting transcripts only"}
+            </p>
+          </div>
         </div>
-      </div>
 
-      {isSelected && (
-        <Select
-          isRequired
-          className="max-w-lg"
-          label="Collection Name"
-          name="collection"
-          labelPlacement="outside"
-          placeholder="Select an existing collection"
-        >
-          {collections.map((collection) => (
-            <SelectItem key={collection} value={collection}>
-              {collection}
-            </SelectItem>
-          ))}
-        </Select>
-      )}
-      {!isSelected && (
-        <Input
-          isRequired
-          className="max-w-lg"
-          errorMessage="Please enter a collection name"
-          label="Collection Name"
-          labelPlacement="outside"
-          name="collection"
-          placeholder="Enter a collection name (e.g.: plane-crash)"
-          type="text"
-        />
-      )}
+        {isSelected && (
+          <Select
+            isRequired
+            className="max-w-lg"
+            label="Collection Name"
+            name="collection"
+            labelPlacement="outside"
+            placeholder="Select an existing collection"
+          >
+            {collections.map((collection) => (
+              <SelectItem key={collection} value={collection}>
+                {collection}
+              </SelectItem>
+            ))}
+          </Select>
+        )}
+        {!isSelected && (
+          <Input
+            isRequired
+            className="max-w-lg"
+            errorMessage="Please enter a collection name"
+            label="Collection Name"
+            labelPlacement="outside"
+            name="collection"
+            placeholder="Enter a collection name (e.g.: plane-crash)"
+            type="text"
+          />
+        )}
 
-      {action === "fetch" && status !== "Completed" && (
-        <Spinner color="default" label={status} labelColor="foreground" />
-      )}
-
-      <div className="flex gap-2">
-        <Button color="primary" type="submit" isDisabled={action === "fetch"}>
-          {action === "fetch" ? "Processing..." : "Fetch Data"}
-        </Button>
-        <Button type="reset" variant="flat" isDisabled={action === "fetch"}>
-          Reset
-        </Button>
-      </div>
-    </Form>
+        <div className="flex gap-2">
+          <Button
+            isLoading={action === "fetch"}
+            color="success"
+            variant="ghost"
+            type="submit"
+            isDisabled={action === "fetch"}
+          >
+            {action === "fetch" ? "Processing..." : "Fetch Data"}
+          </Button>
+          <Button type="reset" variant="flat" isDisabled={action === "fetch"}>
+            Reset
+          </Button>
+          {action === "fetch" && <p>{status}</p>}
+        </div>
+      </Form>
+    </div>
   );
 }

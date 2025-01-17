@@ -1,8 +1,9 @@
+import os
 import dspy
 import logging
 from typing import Literal
 from typing import Dict, Optional
-from src.global_settings import BASE_LLM, OLLAMA_API_BASE
+from src.global_settings import BASE_LLM
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="./.env")
@@ -38,7 +39,7 @@ class Classify:
         self.lm = dspy.LM(
             model=f"ollama_chat/{BASE_LLM}",
             api_key="",
-            api_base=OLLAMA_API_BASE,
+            api_base=os.environ.get("OLLAMA_SERVICE"),
             temperature=0,
         )
         dspy.configure(lm=self.lm)

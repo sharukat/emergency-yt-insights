@@ -33,4 +33,5 @@ export type Status =
   | "Completed"
   | "Error"
   | "Topic modeling in progress..."
-  | "Sentiment analysis in progress...";
+  | "Sentiment analysis in progress..."
+  | "Creating vector database...";

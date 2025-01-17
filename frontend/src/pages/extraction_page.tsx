@@ -12,9 +12,7 @@ export default function ExtractPage() {
         </h2>
         <p className="text-center text-base">
           Search and extract YouTube transcripts and comments related to
-          specific incidents or topics. Our tool preprocesses the data,
-          classifies it for relevance, and performs sentiment analysis and topic
-          modeling to provide meaningful insights.
+          specific incidents or topics.
         </p>
       </div>
       <ExtractForm />

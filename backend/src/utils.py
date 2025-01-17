@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 from langchain_ollama import OllamaEmbeddings
 from src.text_splitter import SemanticChunker
 from src.classifiers import Classify
-from src.global_settings import SMALL_LLM, OLLAMA_API_BASE, EMBED_MODEL
+from src.global_settings import SMALL_LLM, EMBED_MODEL
 
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="./.env")
@@ -32,7 +32,7 @@ chunker = SemanticChunker(
 lm = dspy.LM(
         model=f"ollama_chat/{SMALL_LLM}",
         api_key="",
-        api_base=OLLAMA_API_BASE,
+        api_base=os.getenv("OLLAMA_SERVICE"),
         temperature=0,
     )
 dspy.configure(lm=lm)
