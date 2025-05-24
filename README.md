@@ -28,7 +28,7 @@ In the wake of global emergencies—natural disasters, conflicts, or crises—pe
    - MongoDB (for storing metadata and sentiment/topic analysis)
    - Qdrant (for vector storage of chunked transcripts)
    - Ollama (for embeddings and LLM responses)
-3. Before running the backend, ensure:
+3. **Before running the backend, ensure:**
    - The Ollama container has the Nomic embedding model downloaded.
    - A Groq API Key is available for chat model inference.
   
